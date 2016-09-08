@@ -1,0 +1,1 @@
+python reads wavfile -> FFT-kernel in C server -> python plots FFT output
