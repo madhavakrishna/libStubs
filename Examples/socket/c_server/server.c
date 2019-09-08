@@ -2,10 +2,13 @@
    The port number is passed as an argument */
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h> 
+#include <string.h>
+#include <unistd.h> 
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 #include "fftCommon.h"
 
@@ -18,25 +21,69 @@ void error(char *msg)
 
 
 int socketCreateAndConnect(void){
-  int sockfd, newsockfd, portno, clilen;
-  struct sockaddr_in serv_addr, cli_addr;
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0) 
-     error("ERROR opening socket");
-  bzero((char *) &serv_addr, sizeof(serv_addr));
-  portno = atoi("12345");
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(portno);
-  if (bind(sockfd, (struct sockaddr *) &serv_addr,
-           sizeof(serv_addr)) < 0) 
-           error("ERROR on binding");
-  listen(sockfd,5);
-  clilen = sizeof(cli_addr);
-  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-  if (newsockfd < 0) 
-       error("ERROR on accept");
-	return newsockfd;
+	
+	int sockfd, new_fd; //listen on sock_fd, new connection on new_fd
+
+	struct sockaddr_storage their_addr; //connector's address information
+	int yes=1;
+
+	struct addrinfo hints, *servinfo, *p;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC; //don't care IPv4 or IPv6
+	hints.ai_socktype = SOCK_STREAM; //TCP stream sockets
+	hints.ai_flags = AI_PASSIVE;	 //fill in my IP for me
+	
+	int status;
+	if((status = getaddrinfo(NULL, "12345", &hints, &servinfo)) != 0){
+		fprintf(stderr,"getaddrinfo: %s\n", gai_strerror(status));
+		return 1;
+	}
+
+	//loop through all the results and bind to the first we can
+	for(p = servinfo; p != NULL; p= p->ai_next) {
+		if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
+			perror("server: socket");
+			continue;
+		}
+		
+		//lose the pesky "Address already in use" error message
+		if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
+			perror("setsockopt");
+			exit(1);
+		}
+
+		if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1){
+			close(sockfd);
+			perror("server: bind");
+			continue;
+		}
+
+		break;
+	}
+
+	freeaddrinfo(servinfo);
+	if(p == NULL){
+		fprintf(stderr,"server: failed to bind\n");
+		exit(1);
+	}	
+
+
+	if(listen(sockfd, 5) == -1){
+		perror("listen");
+		exit(1);
+	}	
+
+
+	printf("server: waiting for connection..\n");
+	socklen_t sin_size = sizeof(their_addr);
+	new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+	if(new_fd == -1){
+		perror("accept");
+		exit(1);
+	}
+
+	return new_fd;	
 }
 
 typedef union IntOrFloat{
