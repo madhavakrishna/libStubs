@@ -123,13 +123,43 @@ int hex2int(char *x){
 }
 
 
+int sendAll(int sockfd, char *buf, int *len){
+	int total = 0;
+	int bytesLeft = *len;
+	int n;
+
+	while(total < *len){
+		n = send(sockfd, buf+total, bytesLeft, 0);
+		if(n == -1){ break; }
+		total += n;
+		bytesLeft -= n;
+	}
+
+	*len = total; 
+	return (n==-1)?-1:0;
+}
+
+int recvAll(int sockfd, char *buf, int *len){
+	int total = 0;
+	int bytesLeft =  *len;
+	int n; 
+
+	while(total < *len){
+		n = recv(sockfd, buf+total, bytesLeft, 0);
+		if(n == -1 || n == 0){ break; }
+		total += n;
+		bytesLeft -= n;
+	}
+	*len = total;
+	return n;
+}
 
 void recvFFTInput(int sockfd, Complex *x){
 	int BUFSZ = N*8;
 	char buffer[BUFSZ];
 	bzero(buffer,BUFSZ);
 	int n = 0;
-	n = read(sockfd,buffer,BUFSZ);
+	n = recvAll(sockfd,buffer,&BUFSZ);
 	if(n<0) error("ERROR reading from socket");
 	int i=0;
 	for(i=0; i< N ; i++){
@@ -158,7 +188,7 @@ void sendFFTOutput(int sockfd, Complex *x){
 		}
 	}
 	int n=0;
-	n = write(sockfd,buffer,BUFSZ);
+	n = sendAll(sockfd,buffer,&BUFSZ);
 	if(n<0) error("ERROR writing to socket");
 }
 
