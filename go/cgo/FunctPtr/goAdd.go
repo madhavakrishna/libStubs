@@ -1,5 +1,4 @@
-package  main
-
+package main
 
 //#include<stdio.h>
 // typedef void(*Func)(unsigned int A, unsigned int B);
@@ -23,7 +22,7 @@ import "unsafe"
 func main() {
 	f := unsafe.Pointer(C.Func(C.fAdd))
 	g := unsafe.Pointer(C.Func(C.fSub))
-	C.bridge_Func(f, C.uint(10), C.uint(12));
-	C.bridge_Func(g, C.uint(10), C.uint(12));
-	fmt.Println("Done");
+	C.bridge_Func(f, C.uint(10), C.uint(12))
+	C.bridge_Func(g, C.uint(10), C.uint(12))
+	fmt.Println("Done")
 }
