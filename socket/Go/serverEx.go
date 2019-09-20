@@ -1,14 +1,15 @@
 package main
 
 import (
+	"./ipc"
 	"fmt"
 )
 
 func main() {
 	fmt.Println("vim-go")
-	sockfd := socketCreateAndConnectToClient("12345")
-	sendAll(sockfd, []byte("Madhava Krishna"))
+	sockfd := ipc.SocketCreateAndConnectToClient("12345")
+	ipc.SendAll(sockfd, []byte("Madhava Krishna"))
 	x := make([]byte, 32)
-	recvAll(sockfd, x)
+	ipc.RecvAll(sockfd, x)
 	fmt.Println(string(x))
 }

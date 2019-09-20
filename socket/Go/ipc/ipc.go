@@ -1,4 +1,4 @@
-package main
+package ipc
 
 import (
 	"C"
@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-func socketCreateAndConnectToClient(port string) (conn net.Conn) {
+func SocketCreateAndConnectToClient(port string) (conn net.Conn) {
 	// listen on all interfaces
 	ln, err := net.Listen("tcp", ":"+port)
 	if err != nil {
@@ -24,7 +24,7 @@ func socketCreateAndConnectToClient(port string) (conn net.Conn) {
 	return
 }
 
-func socketDialAndConnectToServer(ip string, port string) (conn net.Conn) {
+func SocketDialAndConnectToServer(ip string, port string) (conn net.Conn) {
 	addr := ip + ":" + port
 	// connect to this socket
 	connTmp, err := net.Dial("tcp", addr)
@@ -35,18 +35,18 @@ func socketDialAndConnectToServer(ip string, port string) (conn net.Conn) {
 	return
 }
 
-func sendAll(conn net.Conn, b []byte) (n int, err error) {
+func SendAll(conn net.Conn, b []byte) (n int, err error) {
 	n, err = conn.Write(b)
 	return
 }
 
-func recvAll(conn net.Conn, b []byte) (n int, err error) {
+func RecvAll(conn net.Conn, b []byte) (n int, err error) {
 	n, err = io.ReadFull(conn, b)
 	return
 }
 
 //------ POSIX Shared Memory ----------------------
-func createShMem(fName string, len int) (fd *os.File) {
+func CreateShMem(fName string, len uint32) (fd *os.File) {
 	//NOTE: /dev/shm/fName file-path
 	fd, err := shm.Open(fName, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
@@ -60,7 +60,7 @@ func createShMem(fName string, len int) (fd *os.File) {
 	return
 }
 
-func destroyShMem(fd *os.File) {
+func DestroyShMem(fd *os.File) {
 	//TODO: Equivalent on the device side
 	shm.Unlink(fd.Name())
 	fd.Close()
